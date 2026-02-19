@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypePair — Font Pairing Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+/* ═══ TOKENS ═══ */
+:root {
+  --bg:       #faf9f6;
+  --surface:  #ffffff;
+  --text:     #1a1a1a;
+  --muted:    #666666;
+  --border:   #e5e5e5;
+  --accent:   #d92215;
+  --accent-dk:#b81d10;
+  --shadow-sm:0 2px 6px rgba(0,0,0,0.05);
+  --shadow-md:0 8px 24px rgba(0,0,0,0.09);
+  --radius:   12px;
+  --trans:    all 0.25s ease;
+}
+[data-theme="dark"] {
+  --bg:      #121212;
+  --surface: #1e1e1e;
+  --text:    #e0e0e0;
+  --muted:   #999999;
+  --border:  #2e2e2e;
+  --shadow-sm:0 2px 6px rgba(0,0,0,0.3);
+  --shadow-md:0 8px 24px rgba(0,0,0,0.45);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  transition:background-color .4s ease,color .4s ease;
+  overflow-x:hidden;
+}
+button{cursor:pointer;font-family:inherit;}
+a{text-decoration:none;color:inherit;}
+[contenteditable]{outline:none;}
+
+.container{max-width:1280px;margin:0 auto;padding:0 2rem;}
+
+/* ── HEADER ── */
+header{
+  padding:1.25rem 0;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:200;
+  background:var(--bg);
+}
+.logo{font-size:1.4rem;font-weight:300;letter-spacing:-.03em;background:none;border:none;color:var(--text);}
+.logo strong{font-weight:700;font-style:italic;color:var(--accent);}
+.main-nav{
+  display:flex;gap:.25rem;background:none;
+  padding:0;border-radius:50px;border:none;box-shadow:none;
+}
+.nav-link{
+  color:var(--muted);font-size:.82rem;font-weight:600;
+  padding:.3rem .75rem;border-radius:50px;border:none;background:none;transition:var(--trans);
+}
+.nav-link:hover{color:var(--accent);}
+.nav-link.active{background:var(--accent);color:#fff;}
+.header-right{display:flex;align-items:center;gap:.5rem;}
+.icon-btn{
+  width:36px;height:36px;border-radius:50%;border:1px solid var(--border);
+  background:var(--surface);color:var(--muted);display:flex;align-items:center;
+  justify-content:center;font-size:1rem;transition:var(--trans);
+}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+.auth-btn{
+  border:1px solid var(--border);padding:.5rem 1.1rem;border-radius:8px;
+  background:var(--surface);color:var(--text);font-size:.85rem;font-weight:600;transition:var(--trans);
+}
+.auth-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── PAGES ── */
+.page-section{display:none;padding-bottom:4rem;animation:fadeIn .35s ease;}
+.page-section.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:3rem 0 .5rem;}
+.hero h1{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:300;line-height:1.1;}
+.hero h1 strong{font-weight:700;font-style:italic;color:var(--accent);}
+.hero p{color:var(--muted);margin-top:.75rem;}
+
+/* ── CONTROLS ── */
+.controls-bar{display:flex;gap:1rem;margin:1.75rem 0 1.25rem;align-items:center;flex-wrap:wrap;}
+.search-box{flex:1;min-width:200px;position:relative;}
+.search-box input{
+  width:100%;padding:.85rem 1rem .85rem 2.6rem;
+  border:1px solid var(--border);border-radius:var(--radius);
+  font-size:.95rem;background:var(--surface);color:var(--text);transition:var(--trans);
+}
+.search-box input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(217,34,21,.1);}
+.search-icon{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+.status-line{font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:1.5rem;}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .2s;}
+.sdot.ok{background:#27ae60;}
+
+/* ── GRID ── */
+.pairing-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(380px,1fr));
+  gap:2rem;
+}
+
+/* ── CARD ── */
+.pairing-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:2.5rem;position:relative;transition:var(--trans);overflow:hidden;
+}
+.pairing-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,var(--accent),#ff6b4a);
+  transform:scaleX(0);transform-origin:left;transition:transform .3s ease;
+}
+.pairing-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-md);border-color:var(--accent);}
+.pairing-card:hover::before{transform:scaleX(1);}
+.pairing-card.code-open{border-color:var(--accent);}
+.pairing-card.code-open::before{transform:scaleX(1);}
+
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.2rem;}
+.style-tag{
+  font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--accent);background:rgba(217,34,21,.08);padding:.28rem .75rem;border-radius:50px;
+}
+.font-labels{margin-top:.45rem;font-size:.78rem;color:var(--muted);font-weight:500;letter-spacing:.03em;}
+.font-labels strong{color:var(--text);font-weight:600;}
+
+.card-actions{display:flex;gap:.4rem;flex-shrink:0;}
+.action-btn{
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--border);
+  background:var(--surface);display:flex;align-items:center;justify-content:center;
+  color:var(--muted);font-size:.85rem;transition:var(--trans);
+}
+.action-btn:hover{border-color:var(--accent);color:var(--accent);transform:scale(1.1);}
+.action-btn.liked{background:var(--accent);border-color:var(--accent);color:#fff;}
+.action-btn.liked:hover{background:var(--accent-dk);}
+.action-btn.rst-btn{display:none;}
+.pairing-card.edited .rst-btn{display:flex;}
+
+.preview-h{
+  font-size:2.4rem;font-weight:700;line-height:1.1;margin-bottom:.9rem;color:var(--text);
+  border-radius:4px;padding:2px 4px;margin-left:-4px;transition:background .15s;cursor:text;
+}
+.preview-h:hover{background:rgba(217,34,21,.04);}
+.preview-h:focus{background:rgba(217,34,21,.07);box-shadow:0 0 0 2px rgba(217,34,21,.12);}
+.preview-b{
+  font-size:.97rem;line-height:1.65;color:var(--muted);
+  border-radius:4px;padding:2px 4px;margin-left:-4px;transition:background .15s;cursor:text;
+}
+.preview-b:hover{background:rgba(0,0,0,.025);}
+.preview-b:focus{background:rgba(217,34,21,.04);}
+
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);}
+.gf-link{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:4px;font-weight:500;transition:color .18s;}
+.gf-link:hover{color:var(--accent);}
+
+/* inline code */
+.card-code{
+  background:#0e0d0a;border-radius:8px;margin-top:1rem;
+  max-height:0;opacity:0;overflow:hidden;transition:max-height .35s ease,opacity .28s ease;
+}
+.card-code.open{max-height:280px;opacity:1;}
+.code-top{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-bottom:1px solid #1e1d18;}
+.code-top span{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#555;}
+.copy-btn{
+  padding:3px 10px;border-radius:5px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  color:#aaa;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;transition:var(--trans);
+}
+.copy-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+.copy-btn.ok{background:#27ae60;border-color:#27ae60;color:#fff;}
+.code-body{padding:10px 14px;font-family:'Courier New',monospace;font-size:.74rem;line-height:1.65;color:#ccc;overflow-x:auto;}
+.code-body pre{white-space:pre;}
+.ck{color:#ff79c6}.cs{color:#f1fa8c}.cp{color:#8be9fd}.cc{color:#6272a4;font-style:italic}
+
+/* ── EMPTY ── */
+.empty{grid-column:1/-1;text-align:center;padding:5rem 2rem;color:var(--muted);}
+.empty-ico{font-size:2.8rem;opacity:.18;display:block;margin-bottom:8px;}
+
+/* ── ABOUT PAGE ── */
+.about-wrap{max-width:800px;padding:2rem 0 4rem;}
+.about-wrap h2{font-size:1.9rem;font-weight:300;letter-spacing:-.02em;margin-bottom:1rem;}
+.about-wrap h2 strong{font-weight:700;font-style:italic;color:var(--accent);}
+.about-wrap p{color:var(--muted);line-height:1.8;margin-bottom:1.25rem;}
+.about-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;margin-bottom:1.5rem;}
+.about-box h3{font-size:1rem;font-weight:700;margin-bottom:1rem;}
+.about-box ul{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.about-box li{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:var(--text);line-height:1.55;}
+.about-box li::before{content:'→';color:var(--accent);flex-shrink:0;font-weight:700;}
+.hlist{list-style:none;}
+.hlist li{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+.hlist li:last-child{border-bottom:none;}
+.h-n{font-size:1.35rem;color:var(--accent);line-height:1;flex-shrink:0;width:26px;font-weight:700;}
+.h-txt h4{font-size:.88rem;font-weight:700;margin-bottom:2px;}
+.h-txt p{font-size:.81rem;color:var(--muted);line-height:1.55;}
+
+/* ── MODALS ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:1000;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{
+  background:var(--surface);padding:2.5rem 2rem 2rem;border-radius:var(--radius);
+  width:100%;max-width:390px;box-shadow:0 20px 60px rgba(0,0,0,.2);
+  transform:translateY(16px);transition:transform .28s ease;border:1px solid var(--border);position:relative;
+}
+.modal-overlay.open .modal{transform:none;}
+.modal-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:1.1rem;transition:color .18s;}
+.modal-close:hover{color:var(--text);}
+.modal-ico{font-size:2.2rem;margin-bottom:10px;}
+.modal h2{font-size:1.4rem;font-weight:700;margin-bottom:5px;}
+.modal>p{color:var(--muted);margin-bottom:1.5rem;font-size:.88rem;}
+.modal-btns{display:flex;gap:.75rem;justify-content:center;}
+.btn-cancel{padding:9px 20px;border-radius:8px;border:1px solid var(--border);background:transparent;font-size:.88rem;font-weight:600;color:var(--muted);transition:var(--trans);}
+.btn-cancel:hover{border-color:var(--text);color:var(--text);}
+.btn-confirm{padding:9px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:.88rem;font-weight:600;transition:var(--trans);}
+.btn-confirm:hover{background:var(--accent-dk);}
+
+/* auth modal */
+.auth-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.25rem;}
+.atab{flex:1;padding:9px;border:none;background:none;font-size:.84rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:var(--trans);}
+.atab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.aform{display:none;}
+.aform.on{display:block;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;}
+.field input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:.9rem;transition:var(--trans);}
+.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(217,34,21,.1);}
+.field input.bad{border-color:var(--accent);}
+.ferr{font-size:.7rem;color:var(--accent);margin-top:3px;display:none;}
+.ferr.on{display:block;}
+.pw-bar{display:flex;gap:3px;margin-top:5px;height:3px;}
+.pw-seg{flex:1;border-radius:2px;background:var(--border);transition:background .2s;}
+.pw-seg.w{background:#e74c3c;}.pw-seg.f{background:#f39c12;}.pw-seg.s{background:#27ae60;}
+.pw-hint{font-size:.69rem;color:var(--muted);margin-top:3px;min-height:1em;}
+.or-div{text-align:center;position:relative;margin:12px 0;font-size:.76rem;color:var(--muted);}
+.or-div::before,.or-div::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--border);}
+.or-div::before{left:0;}.or-div::after{right:0;}
+.g-btn{width:100%;padding:9px;background:var(--surface);border:1.5px solid var(--border);border-radius:50px;font-size:.87rem;font-weight:500;color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px;transition:var(--trans);margin-bottom:4px;}
+.g-btn:hover{border-color:var(--text);}
+.sub-btn{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:50px;font-size:.9rem;font-weight:600;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;transition:var(--trans);}
+.sub-btn:hover:not(:disabled){background:var(--accent-dk);transform:translateY(-1px);}
+.sub-btn:disabled{opacity:.6;cursor:not-allowed;}
+.modal-note{font-size:.7rem;color:var(--muted);text-align:center;margin-top:10px;}
+.modal-note a{color:var(--accent);}
+.modal-note button{background:none;border:none;color:var(--accent);font-weight:600;font-size:inherit;}
+.forgot-btn{background:none;border:none;color:var(--accent);font-size:.76rem;float:right;margin-bottom:8px;}
+
+/* ── FONT PICKER ── */
+.font-picker-bar{display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1.25rem;}
+.font-picker-bar label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.font-select{padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:.88rem;font-family:inherit;transition:var(--trans);cursor:pointer;min-width:180px;}
+.font-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(217,34,21,.1);}
+.picker-sep{width:1px;height:38px;background:var(--border);flex-shrink:0;align-self:center;}
+.gen-btn{padding:.58rem 1.4rem;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.88rem;font-weight:700;display:flex;align-items:center;gap:6px;transition:var(--trans);margin-left:auto;height:40px;}
+.gen-btn:hover{background:var(--accent-dk);transform:translateY(-1px);}
+.gen-result{background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);padding:2rem;margin-bottom:1.5rem;display:none;}
+.gen-result.show{display:block;animation:fadeIn .35s ease;}
+.gen-result .preview-h{font-size:2.2rem;font-weight:700;line-height:1.1;margin-bottom:.75rem;color:var(--text);}
+.gen-result .preview-b{font-size:.97rem;line-height:1.65;color:var(--muted);}
+.gen-meta{font-size:.74rem;color:var(--muted);margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;}
+.gen-save-btn{padding:.35rem .9rem;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.76rem;font-weight:700;transition:var(--trans);}
+.gen-save-btn:hover{background:var(--accent-dk);}
+
+/* ── PW CHECKLIST ── */
+.pw-checks{list-style:none;margin-top:6px;display:flex;flex-direction:column;gap:3px;}
+.pw-checks li{font-size:.69rem;display:flex;align-items:center;gap:5px;color:var(--muted);transition:color .2s;}
+.pw-checks li::before{content:'○';font-size:.6rem;flex-shrink:0;transition:content .2s;}
+.pw-checks li.ok{color:#16a34a;}
+.pw-checks li.ok::before{content:'✓';}
+.pw-checks li.fail{color:#dc2626;}
+.pw-checks li.fail::before{content:'✗';}
+
+/* ── TERMS SECTION ── */
+.terms-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;margin-top:1.5rem;}
+.terms-wrap h3{font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.terms-wrap h3 span{font-size:.75rem;background:rgba(217,34,21,.08);color:var(--accent);padding:.2rem .6rem;border-radius:50px;font-weight:600;}
+.terms-wrap p{font-size:.88rem;color:var(--muted);line-height:1.75;margin-bottom:.9rem;}
+.terms-wrap p:last-child{margin-bottom:0;}
+.terms-wrap strong{color:var(--text);}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:1.75rem;left:50%;transform:translateX(-50%) translateY(12px);background:#1a1a1a;color:#fff;padding:.7rem 1.5rem;border-radius:50px;font-size:.83rem;font-weight:600;opacity:0;pointer-events:none;z-index:3000;transition:var(--trans);white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.25);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.ok{background:#166534;}
+#toast.err{background:#7f1d1d;}
+#toast.inf{background:#1e3a8a;}
+
+/* ── SPINNER ── */
+.spin{display:inline-block;width:13px;height:13px;border-radius:50%;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spinning .6s linear infinite;flex-shrink:0;}
+@keyframes spinning{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .main-nav{border-radius:50px;justify-content:center;}
+  .container{padding-bottom:20px;}
+  .pairing-grid{grid-template-columns:1fr;gap:1.25rem;}
+  .preview-h{font-size:1.8rem;}
+  .font-picker-bar{flex-direction:column;align-items:stretch;}
+  .picker-sep{width:100%;height:1px;}
+  .gen-btn{width:100%;justify-content:center;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGOUT CONFIRM -->
+<div class="modal-overlay" id="modal-logout">
+  <div class="modal" style="text-align:center">
+    <div class="modal-ico">👋</div>
+    <h2>Sign Out?</h2>
+    <p>Are you sure? Your saved pairings stay in this browser.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-logout')">Cancel</button>
+      <button class="btn-confirm" onclick="doLogout()">Yes, Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="modal-auth">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-auth')">✕</button>
+    <h2 id="auth-title">Create account</h2>
+    <p id="auth-sub" style="color:var(--muted);font-size:.87rem;margin-bottom:16px">Save unlimited pairings. Free.</p>
+    <div class="auth-tabs">
+      <button class="atab on" data-tab="reg">Sign up</button>
+      <button class="atab"    data-tab="log">Log in</button>
+    </div>
+    <!-- REGISTER -->
+    <div class="aform on" id="aform-reg">
+      <button class="g-btn" id="g-reg">
+        <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6A7.8 7.8 0 0 0 18 9.18c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/></svg>
+        Continue with Google
+      </button>
+      <div class="or-div">or</div>
+      <div class="field"><label>Email</label><input type="email" id="r-em" placeholder="you@example.com"><div class="ferr" id="r-em-e"></div></div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="r-pw" placeholder="Min 8 chars, 1 uppercase, 1 special">
+        <ul class="pw-checks" id="pw-checks">
+          <li id="chk-len">At least 8 characters</li>
+          <li id="chk-upper">At least 1 uppercase letter (A–Z)</li>
+          <li id="chk-special">At least 1 special character (!@#$…)</li>
+        </ul>
+        <div class="pw-bar" style="margin-top:6px"><div class="pw-seg" id="ps1"></div><div class="pw-seg" id="ps2"></div><div class="pw-seg" id="ps3"></div></div>
+        <div class="pw-hint" id="pw-hint"></div>
+        <div class="ferr" id="r-pw-e"></div>
+      </div>
+      <button class="sub-btn" id="reg-sub">Create account</button>
+      <p class="modal-note">By signing up you agree to our <button onclick="closeModal('modal-auth');gotoPage('about');setTimeout(()=>document.getElementById('terms-section')?.scrollIntoView({behavior:'smooth',block:'start'}),350);" style="background:none;border:none;color:var(--accent);font-weight:600;font-size:inherit;cursor:pointer;">Terms</button>.</p>
+    </div>
+    <!-- LOGIN -->
+    <div class="aform" id="aform-log">
+      <button class="g-btn" id="g-log">
+        <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6A7.8 7.8 0 0 0 18 9.18c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/></svg>
+        Continue with Google
+      </button>
+      <div class="or-div">or</div>
+      <div class="field"><label>Email</label><input type="email" id="l-em" placeholder="you@example.com"><div class="ferr" id="l-em-e"></div></div>
+      <div class="field"><label>Password</label><input type="password" id="l-pw" placeholder="Your password"><div class="ferr" id="l-pw-e"></div></div>
+      <button class="forgot-btn" id="forgot-btn">Forgot password?</button>
+      <button class="sub-btn" id="log-sub">Log in</button>
+      <p class="modal-note">No account? <button onclick="switchTab('reg')">Sign up free →</button></p>
+    </div>
+    <!-- FORGOT -->
+    <div class="aform" id="aform-forgot">
+      <p style="font-size:.87rem;color:var(--muted);margin-bottom:16px;line-height:1.5">Enter your email and we'll send a reset link.</p>
+      <div class="field"><label>Email</label><input type="email" id="f-em" placeholder="you@example.com"><div class="ferr" id="f-em-e"></div></div>
+      <button class="sub-btn" id="fgt-sub">Send reset link</button>
+      <p class="modal-note"><button onclick="switchTab('log')">← Back to log in</button></p>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="container" style="width:100%;max-width:100%;display:flex;align-items:center;justify-content:space-between;">
+    <button class="logo" onclick="gotoPage('home')">Type<strong>Pair</strong></button>
+    <nav class="main-nav">
+      <button class="nav-link active" data-page="home"  onclick="gotoPage('home')">Explore</button>
+      <button class="nav-link"        data-page="saved" onclick="gotoPage('saved')">Saved</button>
+      <button class="nav-link"        data-page="about" onclick="gotoPage('about')">About</button>
+    </nav>
+    <div class="header-right">
+      <button class="icon-btn" id="dark-btn" title="Toggle dark mode">🌙</button>
+      <div id="auth-area"></div>
+    </div>
+  </div>
+</header>
+
+<!-- PAGE: HOME -->
+<section id="page-home" class="page-section active">
+  <div class="container">
+    <div class="hero">
+      <h1>Perfect <strong>Pairings</strong></h1>
+      <p>Curated Google Fonts combinations for your next project.</p>
+    </div>
+    <div class="controls-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search style (e.g. Serif, Bold, Thai)…">
+      </div>
+    </div>
+    <!-- FONT PICKER -->
+    <div class="font-picker-bar">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label>Heading font</label>
+        <select class="font-select" id="pick-h"><option value="">— Any —</option></select>
+      </div>
+      <div class="picker-sep"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label>Body font</label>
+        <select class="font-select" id="pick-b"><option value="">— Any —</option></select>
+      </div>
+      <button class="gen-btn" id="gen-btn">✦ Generate</button>
+    </div>
+    <div class="gen-result" id="gen-result">
+      <div class="preview-h" id="gen-h"></div>
+      <div class="preview-b" id="gen-b"></div>
+      <div class="gen-meta">
+        <span id="gen-label"></span>
+        <button class="gen-save-btn" id="gen-save">♡ Save this pairing</button>
+      </div>
+    </div>
+    <div class="status-line">
+      <span class="sdot" id="sdot"></span>
+      <span id="smsg">Loading…</span>
+    </div>
+    <div class="pairing-grid" id="main-grid"></div>
+  </div>
+</section>
+
+<!-- PAGE: SAVED -->
+<section id="page-saved" class="page-section">
+  <div class="container">
+    <h1 style="font-size:clamp(1.6rem,3vw,2.2rem);font-weight:300;letter-spacing:-.02em;padding:2rem 0 1.5rem;">
+      Your <strong style="font-weight:700;font-style:italic;color:var(--accent)">Collection</strong>
+    </h1>
+    <div class="pairing-grid" id="saved-grid"></div>
+  </div>
+</section>
+
+<!-- PAGE: ABOUT -->
+<section id="page-about" class="page-section">
+  <div class="container">
+    <div class="about-wrap">
+      <h2>About <strong>TypePair</strong></h2>
+      <p>A typography tool for designers and developers — built to demonstrate Nielsen's 10 Usability Heuristics in a real, usable product. Every font is from Google Fonts: open-source and free for personal and commercial use.</p>
+      <div class="about-box">
+        <h3>How to use</h3>
+        <ul>
+          <li>Browse pairings on the <strong>Explore</strong> tab, or use the search bar to filter by style.</li>
+          <li>Click directly on any <strong>heading or body text</strong> to type your own content — changes sync across all cards.</li>
+          <li>Hit the <strong>heart ♥</strong> to save a pairing to your collection.</li>
+          <li>Click <strong>&lt;/&gt;</strong> on any card to reveal CSS + Google Fonts import, ready to copy.</li>
+          <li>Toggle <strong>dark mode 🌙</strong> from the top-right corner.</li>
+        </ul>
+      </div>
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:14px" id="terms-section">Terms of Use</h3>
+      <div class="terms-wrap">
+        <h3>📄 Terms of Use <span>Last updated Feb 2025</span></h3>
+        <p><strong>1. Acceptance of Terms.</strong> By accessing or using TypePair, you agree to be bound by these Terms of Use. If you do not agree to these terms, please do not use the service.</p>
+        <p><strong>2. Use of the Service.</strong> TypePair is a font pairing tool for personal and commercial design projects. All fonts are sourced from Google Fonts and are subject to their respective open-source licences (SIL Open Font License). You may use the CSS code generated by TypePair freely in your own projects.</p>
+        <p><strong>3. User Accounts.</strong> When you create an account, you are responsible for maintaining the confidentiality of your login credentials. You agree to provide accurate information and to notify us of any unauthorised use of your account.</p>
+        <p><strong>4. Intellectual Property.</strong> The TypePair interface, design, and code are protected by copyright. You may not reproduce or redistribute any part of the TypePair application without prior written permission.</p>
+        <p><strong>5. Saved Data.</strong> Saved font pairings are stored locally in your browser. TypePair does not guarantee the persistence of saved data across browsers or devices.</p>
+        <p><strong>6. Disclaimer of Warranties.</strong> TypePair is provided "as is" without warranties of any kind. We do not warrant that the service will be uninterrupted, error-free, or free of viruses or other harmful components.</p>
+        <p><strong>7. Limitation of Liability.</strong> To the fullest extent permitted by law, TypePair shall not be liable for any indirect, incidental, or consequential damages arising from your use of the service.</p>
+        <p><strong>8. Changes to Terms.</strong> We reserve the right to modify these terms at any time. Continued use of the service after changes constitutes your acceptance of the revised terms.</p>
+        <p><strong>9. Contact.</strong> For questions about these Terms, please contact us through the About page.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+'use strict';
+
+const fontDB = [
+  {h:'Playfair Display',   b:'Lato',               tag:'Editorial',     hW:700, bW:400},
+  {h:'Montserrat',         b:'Merriweather',        tag:'Classic',       hW:700, bW:400},
+  {h:'Oswald',             b:'Open Sans',           tag:'Bold',          hW:700, bW:400},
+  {h:'Raleway',            b:'Roboto',              tag:'Clean',         hW:700, bW:400},
+  {h:'Lora',               b:'Source Sans 3',       tag:'Literature',    hW:700, bW:400},
+  {h:'DM Serif Display',   b:'DM Sans',             tag:'Modern Serif',  hW:400, bW:400},
+  {h:'Nunito',             b:'Nunito Sans',         tag:'Rounded',       hW:700, bW:400},
+  {h:'Prompt',             b:'Sarabun',             tag:'Thai Modern',   hW:600, bW:400},
+  {h:'Kanit',              b:'Sarabun',             tag:'Thai Tech',     hW:600, bW:400},
+  {h:'Libre Baskerville',  b:'Montserrat',          tag:'Formal',        hW:700, bW:400},
+  {h:'Bebas Neue',         b:'Roboto',              tag:'Headline',      hW:400, bW:400},
+  {h:'Abril Fatface',      b:'Poppins',             tag:'Fashion',       hW:400, bW:400},
+  {h:'Cinzel',             b:'Fauna One',           tag:'Elegant',       hW:700, bW:400},
+  {h:'Space Mono',         b:'Work Sans',           tag:'Tech',          hW:700, bW:400},
+  {h:'Syne',               b:'Inter',               tag:'Artistic',      hW:700, bW:400},
+  {h:'Prata',              b:'Lato',                tag:'Luxury',        hW:400, bW:400},
+  {h:'Archivo Black',      b:'Roboto',              tag:'Impact',        hW:400, bW:400},
+  {h:'Comfortaa',          b:'Open Sans',           tag:'Soft',          hW:700, bW:400},
+  {h:'Righteous',          b:'Roboto',              tag:'Futuristic',    hW:400, bW:400},
+  {h:'Fjalla One',         b:'Cantarell',           tag:'Condensed',     hW:400, bW:400},
+  {h:'Lobster',            b:'Cabin',               tag:'Playful',       hW:400, bW:400},
+  {h:'Alfa Slab One',      b:'Gentium Book Basic',  tag:'Heavy',         hW:400, bW:400},
+  {h:'Chivo',              b:'Chivo',               tag:'Uniform',       hW:700, bW:400},
+  {h:'Amatic SC',          b:'Josefin Sans',        tag:'Handwritten',   hW:700, bW:400},
+  {h:'Quicksand',          b:'Quicksand',           tag:'Minimal',       hW:600, bW:400},
+  {h:'Vollkorn',           b:'Exo 2',               tag:'Hybrid',        hW:700, bW:400},
+  {h:'Old Standard TT',    b:'Questrial',           tag:'Vintage',       hW:700, bW:400},
+  {h:'Rokkitt',            b:'Lato',                tag:'News',          hW:700, bW:400},
+  {h:'Crimson Text',       b:'Work Sans',           tag:'Book',          hW:700, bW:400},
+  {h:'Frank Ruhl Libre',   b:'Arimo',               tag:'Reading',       hW:700, bW:400},
+  {h:'Spectral',           b:'Rubik',               tag:'Digital',       hW:700, bW:400},
+  {h:'Bitter',             b:'Raleway',             tag:'Slab Serif',    hW:700, bW:400},
+  {h:'Anton',              b:'Roboto',              tag:'Poster',        hW:400, bW:400},
+  {h:'Josefin Sans',       b:'Lato',                tag:'Geometric',     hW:700, bW:400},
+  {h:'Pacifico',           b:'Arimo',               tag:'Script',        hW:400, bW:400},
+  {h:'EB Garamond',        b:'Inter',               tag:'Academic',      hW:700, bW:400},
+  {h:'Cormorant Garamond', b:'Montserrat',          tag:'Refined',       hW:700, bW:500},
+  {h:'Playfair Display',   b:'Source Sans 3',       tag:'Magazine',      hW:900, bW:300},
+  {h:'Oswald',             b:'Merriweather',        tag:'Editorial Mix', hW:600, bW:300},
+  {h:'Raleway',            b:'Lora',                tag:'Sophisticated', hW:800, bW:400},
+  {h:'IBM Plex Sans',      b:'IBM Plex Serif',      tag:'Corporate',     hW:700, bW:400},
+  {h:'Plus Jakarta Sans',  b:'EB Garamond',         tag:'Contemporary',  hW:700, bW:400},
+  {h:'Syne',               b:'Crimson Text',        tag:'Creative',      hW:800, bW:400},
+  {h:'Space Grotesk',      b:'Lora',                tag:'Modern',        hW:700, bW:400},
+  {h:'Barlow',             b:'Spectral',            tag:'Tech Serif',    hW:700, bW:400},
+  {h:'Urbanist',           b:'Libre Baskerville',   tag:'Startup',       hW:700, bW:400},
+  {h:'Manrope',            b:'Playfair Display',    tag:'Contrast',      hW:800, bW:400},
+  {h:'Figtree',            b:'Merriweather',        tag:'Friendly',      hW:700, bW:300},
+  {h:'Noto Serif',         b:'Noto Sans',           tag:'Universal',     hW:700, bW:400},
+  {h:'Outfit',             b:'Bitter',              tag:'Fresh',         hW:700, bW:400},
+];
+
+const DEF_H = 'The quick brown fox';
+const DEF_B = 'Typography is the art and technique of arranging type to make written language legible, readable, and appealing when displayed.';
+const MAX_G = 5;
+const SK = {u:'tp_u4',sv:'tp_sv4',dk:'tp_dk4',db:'tp_db4'};
+
+let user = null, saved = [], editH = DEF_H, editB = DEF_B;
+
+const $   = id => document.getElementById(id);
+const esc = s  => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const sleep = ms => new Promise(r => setTimeout(r,ms));
+const maxS  = () => user ? 1e6 : MAX_G;
+const isSv  = p  => saved.some(s => s.h===p.h && s.b===p.b);
+
+/* TOAST */
+function toast(msg, type='', ms=3000) {
+  const t=$('toast'); t.textContent=msg;
+  t.className='show'+(type?' '+type:'');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='',ms);
+}
+
+/* DARK MODE */
+let dark = localStorage.getItem(SK.dk)==='dark';
+applyDark(dark,false);
+$('dark-btn').addEventListener('click',()=>{dark=!dark;applyDark(dark,true);localStorage.setItem(SK.dk,dark?'dark':'light');});
+function applyDark(on,animate){
+  document.body.setAttribute('data-theme',on?'dark':'light');
+  $('dark-btn').textContent=on?'☀️':'🌙';
+  $('dark-btn').title=on?'Switch to light mode':'Switch to dark mode';
+  if(animate) toast(on?'Dark mode 🌙':'Light mode ☀️','',1800);
+}
+
+/* ROUTING */
+function gotoPage(pg){
+  document.querySelectorAll('.page-section').forEach(p=>p.classList.remove('active'));
+  $('page-'+pg)?.classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.page===pg));
+  window.scrollTo({top:0,behavior:'smooth'});
+  document.title={home:'TypePair — Font Pairings',saved:'Saved — TypePair',about:'About — TypePair'}[pg]||'TypePair';
+  if(pg==='saved') renderSaved();
+  if(pg==='home') syncLoveButtons();
+}
+
+/* FONTS */
+function loadAllFonts(){
+  const fams=new Set();
+  fontDB.forEach(p=>{fams.add(p.h);fams.add(p.b);});
+  const lk=document.createElement('link'); lk.rel='stylesheet';
+  lk.href=`https://fonts.googleapis.com/css2?${Array.from(fams).map(f=>`family=${f.replace(/ /g,'+')}`).join('&')}&display=swap`;
+  document.head.appendChild(lk);
+}
+
+/* STATUS */
+function setStatus(msg,state=''){
+  $('smsg').textContent=msg;
+  $('sdot').className='sdot'+(state?' '+state:'');
+}
+
+/* RENDER */
+function getFiltered(){
+  const q=$('search-input').value.toLowerCase().trim();
+  if(!q) return fontDB;
+  return fontDB.filter(p=>p.h.toLowerCase().includes(q)||p.b.toLowerCase().includes(q)||p.tag.toLowerCase().includes(q));
+}
+
+function renderMain(){
+  const g=$('main-grid'); g.innerHTML='';
+  const list=getFiltered();
+  const isSearch=!!$('search-input').value.trim();
+  if(!list.length){
+    g.innerHTML=`<div class="empty"><span class="empty-ico">🔡</span><strong>No results for "${$('search-input').value}"</strong><br><small style="color:var(--muted)">Try a different search term</small></div>`;
+    setStatus('No pairings found'); return;
+  }
+  list.forEach((p,i)=>{
+    const c=makeCard(p,i);
+    if(isSearch){c.style.animation='fadeIn .2s ease both';c.style.animationDelay='0s';}
+    g.appendChild(c);
+  });
+  setStatus(`Showing ${list.length} pairings`,'ok');
+}
+
+function renderSaved(){
+  const g=$('saved-grid'); g.innerHTML='';
+  if(!saved.length){
+    g.innerHTML=`<div class="empty" style="grid-column:1/-1"><span class="empty-ico">♡</span><strong>No saved pairings yet</strong><br><small style="color:var(--muted)">Heart any pairing on Explore to save it here</small></div>`;
+    return;
+  }
+  saved.forEach((p,i)=>g.appendChild(makeCard(p,i)));
+}
+
+/* MAKE CARD */
+function makeCard(p,idx){
+  const sv=isSv(p);
+  const card=document.createElement('div');
+  card.className='pairing-card';
+  card.dataset.h=p.h;
+  card.dataset.b=p.b;
+  card.style.animation='fadeIn .35s ease both';
+  card.style.animationDelay=`${idx*.04}s`;
+
+  card.innerHTML=`
+    <div class="card-header">
+      <div>
+        <span class="style-tag">${esc(p.tag)}</span>
+        <div class="font-labels" style="margin-top:.45rem"><strong>${esc(p.h)}</strong> + ${esc(p.b)}</div>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn ${sv?'liked':''} love-btn" title="${sv?'Remove from saved':'Save pairing'}">${sv?'♥':'♡'}</button>
+        <button class="action-btn code-btn" title="View CSS code">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+        </button>
+        <button class="action-btn rst-btn" title="Reset preview text">↺</button>
+      </div>
+    </div>
+    <div class="preview-h" contenteditable="true" spellcheck="false"
+      style="font-family:'${p.h}',Georgia,serif;font-weight:${p.hW}">${esc(editH)}</div>
+    <div class="preview-b" contenteditable="true" spellcheck="false"
+      style="font-family:'${p.b}',Arial,sans-serif;font-weight:${p.bW}">${esc(editB)}</div>
+    <div class="card-footer">
+      <a class="gf-link" href="https://fonts.google.com/specimen/${encodeURIComponent(p.h)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        Google Fonts
+      </a>
+      <span style="font-size:.64rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em">${esc(p.tag)}</span>
+    </div>
+    <div class="card-code">
+      <div class="code-top"><span>CSS + Google Fonts</span><button class="copy-btn">Copy</button></div>
+      <div class="code-body"><pre></pre></div>
+    </div>`;
+
+  const loveBtn  = card.querySelector('.love-btn');
+  const codeBtn  = card.querySelector('.code-btn');
+  const rstBtn   = card.querySelector('.rst-btn');
+  const hEl      = card.querySelector('.preview-h');
+  const bEl      = card.querySelector('.preview-b');
+  const codePanel= card.querySelector('.card-code');
+  const codePre  = card.querySelector('.card-code pre');
+  const copyBtn  = card.querySelector('.copy-btn');
+
+  loveBtn.addEventListener('click',e=>{e.stopPropagation();toggleSave(p,loveBtn);});
+
+  codeBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const isOpen=codePanel.classList.contains('open');
+    document.querySelectorAll('.card-code.open').forEach(el=>{el.classList.remove('open');el.closest('.pairing-card').classList.remove('code-open');});
+    if(!isOpen){
+      codePanel.classList.add('open'); card.classList.add('code-open');
+      codePre.innerHTML=buildCode(p);
+      setTimeout(()=>codePanel.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+    }
+  });
+
+  copyBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const txt=`<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${p.h.replace(/ /g,'+')}:wght@${p.hW}&family=${p.b.replace(/ /g,'+')}:wght@${p.bW}&display=swap">\n\nh1, h2, h3 {\n  font-family: '${p.h}', serif;\n  font-weight: ${p.hW};\n}\nbody, p {\n  font-family: '${p.b}', sans-serif;\n  font-weight: ${p.bW};\n}`;
+    navigator.clipboard?.writeText(txt).then(()=>{
+      copyBtn.textContent='✓ Copied!'; copyBtn.classList.add('ok');
+      toast('Code copied ✓','ok');
+      setTimeout(()=>{copyBtn.textContent='Copy';copyBtn.classList.remove('ok');},2400);
+    });
+  });
+
+  rstBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    editH=DEF_H; editB=DEF_B;
+    document.querySelectorAll('.preview-h').forEach(el=>el.textContent=editH);
+    document.querySelectorAll('.preview-b').forEach(el=>el.textContent=editB);
+    document.querySelectorAll('.pairing-card').forEach(c=>c.classList.remove('edited'));
+    toast('Text reset ↺','',2000);
+  });
+
+  hEl.addEventListener('input',()=>{
+    editH=hEl.textContent||DEF_H;
+    document.querySelectorAll('.preview-h').forEach(el=>{if(el!==hEl)el.textContent=editH;});
+    document.querySelectorAll('.pairing-card').forEach(c=>c.classList.add('edited'));
+  });
+  bEl.addEventListener('input',()=>{
+    editB=bEl.textContent||DEF_B;
+    document.querySelectorAll('.preview-b').forEach(el=>{if(el!==bEl)el.textContent=editB;});
+    document.querySelectorAll('.pairing-card').forEach(c=>c.classList.add('edited'));
+  });
+  [hEl,bEl].forEach(el=>el.addEventListener('paste',e=>{
+    e.preventDefault();
+    document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));
+  }));
+  return card;
+}
+
+function buildCode(p){
+  return `<span class="cc">/* 1. Paste in &lt;head&gt; */</span>
+<span class="ck">&lt;link</span> <span class="cp">rel</span>=<span class="cs">"stylesheet"</span>
+     <span class="cp">href</span>=<span class="cs">"https://fonts.googleapis.com/css2?family=${p.h.replace(/ /g,'+')}:wght@${p.hW}&amp;family=${p.b.replace(/ /g,'+')}:wght@${p.bW}&amp;display=swap"</span><span class="ck">&gt;</span>
+
+<span class="cc">/* 2. CSS */</span>
+<span class="cp">h1, h2, h3</span> {
+  <span class="cp">font-family:</span> <span class="cs">'${p.h}'</span>, serif;
+  <span class="cp">font-weight:</span> ${p.hW};
+}
+<span class="cp">body, p</span> {
+  <span class="cp">font-family:</span> <span class="cs">'${p.b}'</span>, sans-serif;
+  <span class="cp">font-weight:</span> ${p.bW};
+}`;
+}
+
+/* SAVE */
+function syncLoveButtons(){
+  document.querySelectorAll('.pairing-card').forEach(card=>{
+    const btn=card.querySelector('.love-btn');
+    if(!btn) return;
+    const h=card.dataset.h, b=card.dataset.b;
+    if(!h||!b) return;
+    const isLiked=saved.some(s=>s.h===h&&s.b===b);
+    btn.classList.toggle('liked',isLiked);
+    btn.textContent=isLiked?'♥':'♡';
+    btn.title=isLiked?'Remove from saved':'Save pairing';
+  });
+}
+
+function toggleSave(p,btn){
+  const i=saved.findIndex(s=>s.h===p.h&&s.b===p.b);
+  if(i>=0){
+    saved.splice(i,1);
+    toast('Removed','',2000);
+  } else {
+    if(saved.length>=maxS()){
+      if(!user){toast('Sign up for unlimited saves ✨','inf',3500);openModal('auth','reg');}
+      else toast('Save limit reached','err'); return;
+    }
+    saved.push({...p});
+    toast('Saved ♥','ok',2000);
+  }
+  localStorage.setItem(SK.sv,JSON.stringify(saved));
+  syncLoveButtons();
+  if(document.getElementById('page-saved').classList.contains('active')) renderSaved();
+}
+
+/* SEARCH */
+$('search-input').addEventListener('input', renderMain);
+$('search-input').addEventListener('keyup', renderMain);
+
+/* FONT PICKER */
+(function(){
+  const heads=new Set(), bodies=new Set();
+  fontDB.forEach(p=>{heads.add(p.h);bodies.add(p.b);});
+  const hSel=$('pick-h'), bSel=$('pick-b');
+  [...heads].sort().forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;hSel.appendChild(o);});
+  [...bodies].sort().forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;bSel.appendChild(o);});
+})();
+
+let genPairing=null;
+$('gen-btn').addEventListener('click',()=>{
+  const hVal=$('pick-h').value;
+  const bVal=$('pick-b').value;
+  let pool=fontDB;
+  if(hVal) pool=pool.filter(p=>p.h===hVal);
+  if(bVal) pool=pool.filter(p=>p.b===bVal);
+  if(!pool.length) pool=fontDB;
+  const p=pool[Math.floor(Math.random()*pool.length)];
+  genPairing=p;
+  const res=$('gen-result');
+  const hEl=$('gen-h'), bEl=$('gen-b'), lbl=$('gen-label');
+  hEl.textContent=editH;
+  bEl.textContent=editB;
+  hEl.style.fontFamily=`'${p.h}',Georgia,serif`;
+  hEl.style.fontWeight=p.hW;
+  bEl.style.fontFamily=`'${p.b}',Arial,sans-serif`;
+  bEl.style.fontWeight=p.bW;
+  lbl.innerHTML=`<strong style="color:var(--accent)">${esc(p.h)}</strong> + ${esc(p.b)} · <span style="font-size:.7rem;background:rgba(217,34,21,.08);color:var(--accent);padding:.15rem .55rem;border-radius:50px;">${esc(p.tag)}</span>`;
+  res.classList.add('show');
+  toast(`Generated: ${p.h} + ${p.b}`,'ok',2500);
+  // ensure fonts loaded for this pair
+  const lk=document.createElement('link');lk.rel='stylesheet';
+  lk.href=`https://fonts.googleapis.com/css2?family=${p.h.replace(/ /g,'+')}:wght@${p.hW}&family=${p.b.replace(/ /g,'+')}:wght@${p.bW}&display=swap`;
+  document.head.appendChild(lk);
+});
+
+$('gen-save').addEventListener('click',()=>{
+  if(!genPairing)return;
+  const sv=isSv(genPairing);
+  if(sv){toast('Already saved ♥','',2000);return;}
+  if(saved.length>=maxS()){
+    if(!user){toast('Sign up for unlimited saves ✨','inf',3500);openModal('auth','reg');}
+    else toast('Save limit reached','err'); return;
+  }
+  saved.push({...genPairing});
+  localStorage.setItem(SK.sv,JSON.stringify(saved));
+  $('gen-save').textContent='♥ Saved!';
+  $('gen-save').style.background='#166534';
+  toast('Saved ♥','ok',2000);
+  setTimeout(()=>{$('gen-save').textContent='♡ Save this pairing';$('gen-save').style.background='';},2500);
+});
+
+/* AUTH MODAL */
+function openModal(which,tab='reg'){
+  if(which==='auth'){
+    $('modal-auth').classList.add('open');
+    switchTab(tab); clearErrs();
+    setTimeout(()=>{const inp=$('modal-auth').querySelector('.aform.on input');if(inp)inp.focus();},280);
+  } else {
+    $('modal-'+which).classList.add('open');
+    setTimeout(()=>$('modal-'+which).querySelector('.btn-confirm')?.focus(),120);
+  }
+}
+function closeModal(id){$(id).classList.remove('open');}
+
+$('modal-auth').addEventListener('click',e=>{if(e.target===$('modal-auth'))closeModal('modal-auth');});
+$('modal-logout').addEventListener('click',e=>{if(e.target===$('modal-logout'))closeModal('modal-logout');});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeModal('modal-auth');closeModal('modal-logout');}
+});
+
+document.querySelectorAll('.atab').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+$('forgot-btn').addEventListener('click',()=>switchTab('forgot'));
+
+function switchTab(t){
+  document.querySelectorAll('.atab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  document.querySelectorAll('.aform').forEach(f=>f.classList.toggle('on',f.id===`aform-${t}`));
+  const T={reg:'Create account',log:'Welcome back',forgot:'Reset password'};
+  const S={reg:'Save unlimited pairings. Free.',log:'Sign in to your TypePair account.',forgot:"We'll email you a reset link."};
+  $('auth-title').textContent=T[t]||'TypePair';
+  $('auth-sub').textContent=S[t]||'';
+  clearErrs();
+}
+
+function clearErrs(){
+  document.querySelectorAll('.ferr').forEach(e=>{e.textContent='';e.classList.remove('on');});
+  document.querySelectorAll('.field input').forEach(e=>e.classList.remove('bad'));
+  ['ps1','ps2','ps3'].forEach(id=>{const e=$(id);if(e)e.className='pw-seg';});
+  const h=$('pw-hint');if(h)h.textContent='';
+}
+function ferr(id,msg,inp){const e=$(id);if(!e)return;e.textContent=msg;e.classList.add('on');if(inp){inp.classList.add('bad');inp.focus();}}
+function vEmail(v,eid,inp){if(!v){ferr(eid,'Enter your email.',inp);return false;}if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)){ferr(eid,'Enter a valid email.',inp);return false;}return true;}
+function vPw(v,eid,inp){
+  if(!v){ferr(eid,'Enter a password.',inp);return false;}
+  if(v.length<8){ferr(eid,'At least 8 characters required.',inp);return false;}
+  if(!/[A-Z]/.test(v)){ferr(eid,'Must include at least 1 uppercase letter.',inp);return false;}
+  if(!/[^a-zA-Z0-9]/.test(v)){ferr(eid,'Must include at least 1 special character.',inp);return false;}
+  return true;
+}
+
+$('r-pw').addEventListener('input',function(){
+  const v=this.value;
+  const hasLen=v.length>=8;
+  const hasUpper=/[A-Z]/.test(v);
+  const hasSpecial=/[^a-zA-Z0-9]/.test(v);
+  const setChk=(id,ok)=>{
+    const el=$(id);if(!el)return;
+    el.classList.toggle('ok',ok);
+    el.classList.toggle('fail',v.length>0&&!ok);
+  };
+  setChk('chk-len',hasLen);
+  setChk('chk-upper',hasUpper);
+  setChk('chk-special',hasSpecial);
+  let sc=0;
+  if(hasLen)sc++;if(hasUpper)sc++;if(hasSpecial)sc++;
+  const cls=['','w','f','s'],lbl=['','Weak','Fair','Strong ✓'];
+  ['ps1','ps2','ps3'].forEach((id,i)=>{$(id).className='pw-seg'+(i<sc?' '+cls[sc]:'');});
+  $('pw-hint').textContent=v?lbl[sc]:'';
+});
+
+const getU=()=>{try{return JSON.parse(localStorage.getItem(SK.db)||'[]');}catch{return[];}};
+const setU=u=>localStorage.setItem(SK.db,JSON.stringify(u));
+async function mockReg(e,p){await sleep(600);const us=getU();if(us.find(u=>u.e===e))throw new Error('Email already exists — try logging in.');us.push({e,p:btoa(unescape(encodeURIComponent(p)))});setU(us);return{email:e,name:e.split('@')[0]};}
+async function mockLog(e,p){await sleep(550);const us=getU();const u=us.find(u=>u.e===e);if(!u)throw new Error('No account found — did you mean to sign up?');if(decodeURIComponent(escape(atob(u.p)))!==p)throw new Error('Incorrect password.');return{email:e,name:e.split('@')[0]};}
+async function mockG(){await sleep(700);const e='google@typepair.io',us=getU();if(!us.find(u=>u.e===e)){us.push({e,p:btoa('g')});setU(us);}return{email:e,name:'Google User'};}
+function setBtnLoad(id,on,lbl){const b=$(id);if(!b)return;b.disabled=on;b.innerHTML=on?'<span class="spin"></span> Loading…':lbl;}
+
+$('reg-sub').addEventListener('click',async()=>{
+  clearErrs();
+  const eEl=$('r-em'),pEl=$('r-pw'),ev=eEl.value.trim(),pv=pEl.value;
+  if(!vEmail(ev,'r-em-e',eEl)||!vPw(pv,'r-pw-e',pEl))return;
+  setBtnLoad('reg-sub',true,'Create account');
+  try{const u=await mockReg(ev,pv);doLogin(u);closeModal('modal-auth');toast(`Welcome, ${u.name}! 🎉`,'ok',4000);}
+  catch(err){ferr('r-em-e',err.message,$('r-em'));}
+  finally{setBtnLoad('reg-sub',false,'Create account');}
+});
+$('log-sub').addEventListener('click',async()=>{
+  clearErrs();
+  const eEl=$('l-em'),pEl=$('l-pw'),ev=eEl.value.trim(),pv=pEl.value;
+  if(!vEmail(ev,'l-em-e',eEl)||!vPw(pv,'l-pw-e',pEl))return;
+  setBtnLoad('log-sub',true,'Log in');
+  try{const u=await mockLog(ev,pv);doLogin(u);closeModal('modal-auth');toast(`Welcome back, ${u.name}! 👋`,'ok',3500);}
+  catch(err){ferr(err.message.includes('No account')?'l-em-e':'l-pw-e',err.message,err.message.includes('No account')?$('l-em'):$('l-pw'));}
+  finally{setBtnLoad('log-sub',false,'Log in');}
+});
+$('fgt-sub').addEventListener('click',async()=>{
+  clearErrs();
+  const eEl=$('f-em'),ev=eEl.value.trim();
+  if(!vEmail(ev,'f-em-e',eEl))return;
+  setBtnLoad('fgt-sub',true,'Send reset link');
+  await sleep(520);setBtnLoad('fgt-sub',false,'Send reset link');
+  toast(`Reset link sent to ${ev} 📬`,'ok',5000);closeModal('modal-auth');
+});
+['g-reg','g-log'].forEach(id=>{
+  const b=$(id);if(!b)return;
+  b.addEventListener('click',async function(){
+    const orig=this.innerHTML;this.disabled=true;this.innerHTML='<span class="spin" style="border-top-color:var(--accent);border-color:rgba(0,0,0,0.1)"></span> Connecting…';
+    try{const u=await mockG();doLogin(u);closeModal('modal-auth');toast('Signed in ✓','ok');}
+    catch{this.innerHTML=orig;this.disabled=false;toast('Google failed','err',3500);}
+  });
+});
+
+function doLogin(u){user=u;localStorage.setItem(SK.u,JSON.stringify(u));renderAuth();}
+function doLogout(){user=null;localStorage.removeItem(SK.u);closeModal('modal-logout');renderAuth();toast('Signed out 👋','',2500);}
+
+function renderAuth(){
+  const a=$('auth-area');
+  if(user){
+    const init=(user.name||user.email||'U')[0].toUpperCase();
+    a.innerHTML=`<button class="auth-btn" id="lo-btn">👤 ${esc(user.name||user.email)} · Sign out</button>`;
+    $('lo-btn').addEventListener('click',()=>openModal('logout'));
+  } else {
+    a.innerHTML=`<button class="auth-btn" id="login-btn">Log In</button>`;
+    $('login-btn').addEventListener('click',()=>openModal('auth','log'));
+  }
+}
+
+/* RESTORE */
+(function(){
+  try{const u=JSON.parse(localStorage.getItem(SK.u)||'null');if(u?.email)user=u;}catch{}
+  try{const sv=JSON.parse(localStorage.getItem(SK.sv)||'[]');if(Array.isArray(sv))saved=sv;}catch{}
+  renderAuth();
+})();
+
+loadAllFonts();
+renderMain();
+</script>
+</body>
+</html>
